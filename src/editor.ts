@@ -240,7 +240,7 @@ export class Editor {
   }
 
   private saveClipboard(text: string) : void {
-    vscode.workspace.getConfiguration("vscode-emacs-improved").get("emacs.setClipboardContents") 
+    vscode.workspace.getConfiguration("emacs").get("setClipboardContents") 
       && clipboardy.write(text);
   }
 
@@ -287,7 +287,7 @@ export class Editor {
     const currentPosition = vscode.window.activeTextEditor.selection.active;
     const lastInsertionRange = this.killRing.getLastRange();
 
-    if (!lastInsertionRange.end.isEqual(currentPosition)) {
+    if (!lastInsertionRange || !lastInsertionRange.end.isEqual(currentPosition)) {
       this.status.setStatusBarMessage("Previous command was not a yank.", 3000);
       return false;
     }
