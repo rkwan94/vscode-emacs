@@ -297,7 +297,7 @@ export class Editor {
       this.killRing.backward();
       const prevText = this.killRing.top();
       editBuilder.replace(this.killRing.getLastRange(), prevText);
-      this.saveClipboard(this.killRing.top());
+      this.saveClipboard(prevText);
     }).then(() => {
       const textRange = new vscode.Range(oldInsertionPoint, vscode.window.activeTextEditor.selection.end);
       this.killRing.setLastInsertedRange(textRange);
