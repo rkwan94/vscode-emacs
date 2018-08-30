@@ -2,7 +2,7 @@
     "name": "vscode-emacs-improved",
     "displayName": "Emacs Keymap Improved",
     "description": "emacs like extension for vscode based on hiro-sun's key-map",
-    "version": "1.0.4",
+    "version": "1.1.1",
     "publisher": "rkwan94",
     "homepage": "https://github.com/rkwan94/vscode-emacs",
     "repository": {
@@ -29,7 +29,8 @@
     ],
     "main": "./out/src/extension",
     "contributes": {
-        "commands": [{
+        "commands": [
+            {
                 "command": "emacs.kill",
                 "title": "Cut the text from cursor to line end and save it in emacs kill ring"
             },
@@ -50,7 +51,8 @@
                 "title": "Toggle cua mode"
             }
         ],
-        "keybindings": [{
+        "keybindings": [
+            {
                 "key": "right",
                 "command": "emacs.cursorRight",
                 "when": "editorTextFocus"
@@ -500,12 +502,31 @@
                 "key": "alt+c",
                 "command": "emacs.capitaliseWord"
             }
-        ]
+        ],
+        "configuration": {
+            "title": "Emacs Keymap Improved",
+            "properties": {
+                "emacs.setClipboardContents": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "kill and yank pop will set the contents of system clipboard to the top of the kill ring"
+                },
+                "emacs.killWholeLine": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, kill at the very beginning of a line kills the entire line including the following newline."
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install"
+    },
+    "dependencies": {
+        "clipboardy": "^1.2.3",
+        "@types/clipboardy": "^1.1.0"
     },
     "devDependencies": {
         "@types/mocha": "^2.2.48",
