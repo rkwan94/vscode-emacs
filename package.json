@@ -510,7 +510,12 @@
                     "type": "boolean",
                     "default": false,
                     "description": "kill and yank pop will set the contents of system clipboard to the top of the kill ring"
-                }
+                },
+                "emacs.killWholeLine": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": " If the variable kill-whole-line is true, kill at the very beginning of a line kills the entire line including the following newline."
+              }
             }
         }
     },

@@ -104,8 +104,8 @@ export class Editor {
 
     const newText =
       casing === "upper" ? currentSelection.text.toUpperCase() :
-      casing === "lower" ? currentSelection.text.toLowerCase() :
-      currentSelection.text.charAt(0).toUpperCase() + currentSelection.text.slice(1);
+        casing === "lower" ? currentSelection.text.toLowerCase() :
+          currentSelection.text.charAt(0).toUpperCase() + currentSelection.text.slice(1);
 
     vscode.window.activeTextEditor.edit(builder => {
       builder.replace(currentSelection.range, newText);
@@ -186,11 +186,11 @@ export class Editor {
       });
     }
 
-      // const newCursorPos = this.getSelection();
+    // const newCursorPos = this.getSelection();
 
-      // if (activateMarkMode) {
-      //     this.setSelection(startPos.active, newCursorPos.active);
-      // }
+    // if (activateMarkMode) {
+    //     this.setSelection(startPos.active, newCursorPos.active);
+    // }
   }
 
   public goToPrevSexp(): void {
@@ -223,24 +223,29 @@ export class Editor {
 
     Promise.all(promises).then(() => {
       const selection = this.getSelection();
-      const range = new vscode.Range(selection.start, selection.end);
-
-      const isKillRepeated = this.lastKill && range.start.isEqual(this.lastKill);
-
+      let range = new vscode.Range(selection.start, selection.end);
       this.setSelection(range.start, range.start);
+      const isKillRepeated = this.lastKill && range.start.isEqual(this.lastKill);
+      let text = vscode.window.activeTextEditor.document.getText(range);
 
-      if (range.isEmpty) {
-        this.killEndOfLine(isKillRepeated);
-      } else {
-        this.killText(range, isKillRepeated);
+      if (vscode.window.activeTextEditor.selection.active.line !== vscode.window.activeTextEditor.document.lineCount
+          && (
+            range.isEmpty 
+            || vscode.window.activeTextEditor.document.getText(range).trim() === ''
+            || (range.start.character === 0 && vscode.workspace.getConfiguration("emacs").get("killWholeLine"))
+          )
+        ) {
+        // include line ending
+        range = new vscode.Range(selection.start, new vscode.Position(range.end.line + 1, 0));
+        this.setSelection(range.start, range.start);
+        text = vscode.window.activeTextEditor.document.getText(range);
       }
-      this.lastKill = range.start;
-      this.saveClipboard(this.killRing.top());
+      this.killText(range, text, isKillRepeated);
     });
   }
-
-  private saveClipboard(text: string) : void {
-    vscode.workspace.getConfiguration("emacs").get("setClipboardContents") 
+  
+  private saveClipboard(text: string): void {
+    vscode.workspace.getConfiguration("emacs").get("setClipboardContents")
       && clipboardy.write(text);
   }
 
@@ -249,9 +254,9 @@ export class Editor {
     const range = new vscode.Range(selection.start, selection.end);
 
     if (!range.isEmpty) {
-      this.killText(range, false);
+      this.killText(range, undefined, false);
     }
-    this.lastKill = range.start;
+    
   }
 
   public copy(): void {
@@ -328,12 +333,12 @@ export class Editor {
     selection = new vscode.Selection(nextLine, nextLine);
     vscode.window.activeTextEditor.selection = selection;
     for (let line = selection.start.line;
-          line < doc.lineCount - 1  && doc.lineAt(line).range.isEmpty;
-          ++line) {
-        promises.push(vscode.commands.executeCommand("deleteRight"));
+      line < doc.lineCount - 1 && doc.lineAt(line).range.isEmpty;
+      ++line) {
+      promises.push(vscode.commands.executeCommand("deleteRight"));
     }
     Promise.all(promises).then(() => {
-        vscode.window.activeTextEditor.selection = new vscode.Selection(anchor, anchor);
+      vscode.window.activeTextEditor.selection = new vscode.Selection(anchor, anchor);
     });
   }
 
@@ -518,38 +523,22 @@ export class Editor {
     return !currRegion.start.isEqual(currRegion.end);
   }
 
-  private killEndOfLine(killRepeated: boolean): void {
-    const currentCursorPosition = vscode.window.activeTextEditor.selection.active;
-    vscode.commands.executeCommand("emacs.cursorEnd")
-    .then(() => {
-      const newCursorPos = vscode.window.activeTextEditor.selection.active;
-      const rangeTillEnd = new vscode.Range(currentCursorPosition, newCursorPos);
-      if (rangeTillEnd.isEmpty) {
-        vscode.commands.executeCommand("editor.action.deleteLines").then(() => {
-          this.killRing.append("\n");
-        });
-      }
-
-      return vscode.window.activeTextEditor.document.getText(rangeTillEnd);
-    }).then((text: string) => {
-      vscode.window.activeTextEditor.selection.active = currentCursorPosition;
-      vscode.commands.executeCommand("deleteRight").then(() => {
-        killRepeated ? this.killRing.append(text) : this.killRing.save(text);
-      });
-    });
-
-    this.toggleMarkMode();
-  }
-
-  private killText(range: vscode.Range, killRepeated: boolean): void {
-    const text = vscode.window.activeTextEditor.document.getText(range);
+  private killText(range: vscode.Range, text: string, killRepeated: boolean): void {
+    if (range.isEmpty) {
+      return;
+    }
+    if (!text) {
+      text = vscode.window.activeTextEditor.document.getText(range);
+    }
     const promises = [
       this.delete(range),
     ];
 
     Promise.all(promises).then(() => {
+      this.lastKill = range.start;
       this.status.deactivate(Mode.Mark);
       killRepeated ? this.killRing.append(text) : this.killRing.save(text);
+      this.saveClipboard(this.killRing.top());
     });
   }
 
